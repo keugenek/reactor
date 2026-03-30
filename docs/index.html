@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reactor — Predict LinkedIn Post Performance</title>
+  <meta name="description" content="Know if your LinkedIn post will flop before you hit publish. Get a GO/WAIT/IMPROVE/NO verdict, estimated impressions, and actionable feedback.">
+  <meta property="og:title" content="Reactor — LinkedIn Post Predictor">
+  <meta property="og:description" content="Predict how your LinkedIn post will perform. Zero LLM calls. Instant results.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://keugenek.github.io/reactor/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔮</text></svg>">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --border: #1e1e2e;
+      --text: #e0e0e8;
+      --muted: #8888a0;
+      --accent: #7c5cfc;
+      --accent-glow: #7c5cfc40;
+      --go: #22c55e;
+      --wait: #f59e0b;
+      --improve: #f97316;
+      --no: #ef4444;
+      --radius: 12px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    .container { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 80px 0 40px;
+    }
+    .hero h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 16px;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p {
+      font-size: 1.2rem;
+      color: var(--muted);
+      max-width: 520px;
+      margin: 0 auto 32px;
+    }
+
+    /* Predict Form */
+    .predict-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+    .predict-card textarea {
+      width: 100%;
+      min-height: 120px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.95rem;
+      padding: 14px;
+      resize: vertical;
+      font-family: inherit;
+      line-height: 1.5;
+    }
+    .predict-card textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .predict-card textarea::placeholder { color: var(--muted); }
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+      align-items: center;
+    }
+    .btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-secondary {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .btn-secondary:hover { color: var(--text); border-color: var(--muted); }
+    .char-count { color: var(--muted); font-size: 0.85rem; margin-left: auto; }
+
+    /* Result */
+    .result { display: none; margin-top: 20px; }
+    .result.visible { display: block; }
+    .verdict-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .verdict-bar.go { background: #22c55e15; border: 1px solid #22c55e30; color: var(--go); }
+    .verdict-bar.wait { background: #f59e0b15; border: 1px solid #f59e0b30; color: var(--wait); }
+    .verdict-bar.improve { background: #f9731615; border: 1px solid #f9731630; color: var(--improve); }
+    .verdict-bar.no { background: #ef444415; border: 1px solid #ef444430; color: var(--no); }
+    .verdict-bar .impressions { font-size: 1.4rem; }
+    .verdict-bar .label { font-size: 0.85rem; font-weight: 400; color: var(--muted); margin-left: auto; }
+
+    .scores {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .score-item {
+      text-align: center;
+      padding: 12px 8px;
+      background: var(--bg);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .score-item .value { font-size: 1.3rem; font-weight: 700; color: var(--accent); }
+    .score-item .name { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+    .warnings, .improvements {
+      padding: 14px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 0.9rem;
+    }
+    .warnings { background: #f59e0b10; border: 1px solid #f59e0b20; }
+    .improvements { background: #7c5cfc10; border: 1px solid #7c5cfc20; }
+    .warnings h4 { color: var(--wait); margin-bottom: 8px; }
+    .improvements h4 { color: var(--accent); margin-bottom: 8px; }
+    .warnings li, .improvements li { margin-left: 16px; margin-bottom: 4px; color: var(--muted); }
+
+    /* Register */
+    .register-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 32px;
+      display: none;
+    }
+    .register-card.visible { display: block; }
+    .register-card h3 { margin-bottom: 8px; }
+    .register-card p { color: var(--muted); font-size: 0.9rem; margin-bottom: 16px; }
+    .register-row { display: flex; gap: 12px; }
+    .register-row input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 12px 14px;
+      font-size: 0.95rem;
+    }
+    .register-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .api-key-display {
+      display: none;
+      background: var(--bg);
+      border: 1px solid var(--go);
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 12px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      word-break: break-all;
+    }
+    .api-key-display.visible { display: block; }
+
+    /* Tiers */
+    .tiers {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin: 40px 0;
+    }
+    .tier-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+    }
+    .tier-card.featured { border-color: var(--accent); box-shadow: 0 0 20px var(--accent-glow); }
+    .tier-card h3 { font-size: 1.1rem; margin-bottom: 4px; }
+    .tier-card .price { font-size: 1.8rem; font-weight: 800; margin: 12px 0; }
+    .tier-card .price span { font-size: 0.9rem; font-weight: 400; color: var(--muted); }
+    .tier-card ul { list-style: none; text-align: left; font-size: 0.85rem; color: var(--muted); }
+    .tier-card li { padding: 4px 0; }
+    .tier-card li::before { content: '✓ '; color: var(--go); }
+    .tier-card li.locked::before { content: '🔒 '; }
+    .tier-card li.locked { opacity: 0.5; }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 40px 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+    }
+    .footer a { color: var(--accent); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+
+    .loading { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--muted); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 2rem; }
+      .scores { grid-template-columns: repeat(3, 1fr); }
+      .tiers { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <section class="hero">
+    <h1>🔮 <span>Reactor</span></h1>
+    <p>Know if your LinkedIn post will flop — before you hit publish.</p>
+  </section>
+
+  <div class="predict-card">
+    <textarea id="postInput" placeholder="Paste your LinkedIn post draft here..." maxlength="3000"></textarea>
+    <div class="btn-row">
+      <button class="btn" id="predictBtn" onclick="predict()">Predict</button>
+      <button class="btn-secondary" onclick="document.getElementById('postInput').value=''; hideResult();">Clear</button>
+      <span class="char-count" id="charCount">0 / 3,000</span>
+    </div>
+
+    <div class="result" id="result">
+      <div class="verdict-bar" id="verdictBar">
+        <span id="verdictEmoji"></span>
+        <span id="verdictText"></span>
+        <span class="impressions" id="impressions"></span>
+        <span class="label">estimated impressions</span>
+      </div>
+      <div class="scores" id="scores"></div>
+      <div class="warnings" id="warnings" style="display:none"><h4>⚠️ Warnings</h4><ul id="warningsList"></ul></div>
+      <div class="improvements" id="improvements" style="display:none"><h4>💡 Improvements</h4><ul id="improvementsList"></ul></div>
+      <div id="rateLimitInfo" style="color:var(--muted);font-size:0.85rem;margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <div class="register-card" id="registerCard">
+    <h3>🔑 Get more predictions</h3>
+    <p>Register for free — 5 predictions/day. We store only your email and usage count. Delete anytime.</p>
+    <div class="register-row">
+      <input type="email" id="emailInput" placeholder="you@example.com">
+      <button class="btn" onclick="register()">Register</button>
+    </div>
+    <div class="api-key-display" id="apiKeyDisplay"></div>
+  </div>
+
+  <section class="tiers">
+    <div class="tier-card">
+      <h3>Demo</h3>
+      <div class="price">Free</div>
+      <ul>
+        <li>2 predictions / day</li>
+        <li>Basic verdict + impressions</li>
+        <li>Content type multipliers</li>
+        <li class="locked">Hook analysis</li>
+        <li class="locked">Best posting times</li>
+      </ul>
+    </div>
+    <div class="tier-card featured">
+      <h3>Free</h3>
+      <div class="price">Free</div>
+      <ul>
+        <li>5 predictions / day</li>
+        <li>Full verdict + scores</li>
+        <li>Hook analysis</li>
+        <li>Best posting times</li>
+        <li>Content type multipliers</li>
+      </ul>
+    </div>
+    <div class="tier-card">
+      <h3>Pro</h3>
+      <div class="price">£19<span>/mo</span></div>
+      <ul>
+        <li>Unlimited predictions</li>
+        <li>Custom audience personas</li>
+        <li>Image/carousel analysis</li>
+        <li>A/B hook testing</li>
+        <li>Historical calibration</li>
+      </ul>
+      <p style="color:var(--accent);font-size:0.85rem;margin-top:12px;">Coming soon — 50% off for early birds</p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>Built by <a href="https://linkedin.com/in/ekniazev">Evgenii Kniazev</a> · <a href="https://github.com/keugenek/reactor">GitHub</a> · Zero LLM calls · Runs on Cloudflare</p>
+  </footer>
+</div>
+
+<script>
+const API = 'https://reactor-api.keugenek.workers.dev';
+let apiKey = localStorage.getItem('reactor_api_key') || '';
+
+const $ = id => document.getElementById(id);
+
+$('postInput').addEventListener('input', e => {
+  $('charCount').textContent = `${e.target.value.length} / 3,000`;
+});
+
+function hideResult() {
+  $('result').classList.remove('visible');
+  $('registerCard').classList.remove('visible');
+}
+
+async function predict() {
+  const post = $('postInput').value.trim();
+  if (!post) return;
+
+  const btn = $('predictBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span>';
+  hideResult();
+
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
+    const res = await fetch(`${API}/v1/predict`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ post })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      if (data.needsRegistration || res.status === 429) {
+        $('registerCard').classList.add('visible');
+        $('rateLimitInfo').textContent = data.message || 'Rate limit reached. Register for more.';
+        $('result').classList.add('visible');
+      } else {
+        alert(data.error || 'API error');
+      }
+      return;
+    }
+
+    showResult(data);
+  } catch (err) {
+    alert('Network error: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Predict';
+  }
+}
+
+function showResult(d) {
+  const verdicts = { GO: ['✅', 'go'], WAIT: ['⏰', 'wait'], IMPROVE: ['⚠️', 'improve'], NO: ['🚫', 'no'] };
+  const [emoji, cls] = verdicts[d.verdict] || ['❓', 'wait'];
+
+  const bar = $('verdictBar');
+  bar.className = `verdict-bar ${cls}`;
+  $('verdictEmoji').textContent = emoji;
+  $('verdictText').textContent = d.verdict;
+  $('impressions').textContent = d.impressions.toLocaleString();
+
+  $('scores').innerHTML = [
+    ['Debate', d.debate_score, '/100'],
+    ['Hook', d.hook_score, ''],
+    ['Cringe', d.cringe_score, '/100'],
+    ['Auth', d.authenticity_score, '/100'],
+    ['Timing', d.timing_multiplier, 'x']
+  ].map(([n, v, s]) => `<div class="score-item"><div class="value">${v}${s}</div><div class="name">${n}</div></div>`).join('');
+
+  const wl = $('warningsList');
+  const il = $('improvementsList');
+  wl.innerHTML = '';
+  il.innerHTML = '';
+
+  if (d.warnings && d.warnings.length) {
+    d.warnings.forEach(w => { const li = document.createElement('li'); li.textContent = w; wl.appendChild(li); });
+    $('warnings').style.display = 'block';
+  } else { $('warnings').style.display = 'none'; }
+
+  if (d.improvements && d.improvements.length) {
+    d.improvements.forEach(i => { const li = document.createElement('li'); li.textContent = i; il.appendChild(li); });
+    $('improvements').style.display = 'block';
+  } else { $('improvements').style.display = 'none'; }
+
+  if (d.rateLimit) {
+    $('rateLimitInfo').textContent = `${d.tier} tier · ${d.rateLimit.remaining}/${d.rateLimit.limit} remaining today`;
+  }
+
+  if (d.rateLimit && d.rateLimit.remaining === 0) {
+    $('registerCard').classList.add('visible');
+  }
+
+  $('result').classList.add('visible');
+}
+
+async function register() {
+  const email = $('emailInput').value.trim();
+  if (!email) return;
+
+  try {
+    const res = await fetch(`${API}/v1/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+
+    if (!res.ok) { alert(data.error || 'Registration failed'); return; }
+
+    apiKey = data.api_key;
+    localStorage.setItem('reactor_api_key', apiKey);
+    const display = $('apiKeyDisplay');
+    display.textContent = `✅ Your API key: ${apiKey} — saved to browser. You now have ${data.limit} predictions/day.`;
+    display.classList.add('visible');
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+
+// Restore key on load
+if (apiKey) {
+  $('registerCard').classList.remove('visible');
+}
+</script>
+</body>
+</html>
