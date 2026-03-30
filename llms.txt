@@ -1,0 +1,29 @@
+# Reactor — LinkedIn Post Performance Predictor
+# https://github.com/keugenek/reactor
+
+## What is this?
+Reactor predicts how a LinkedIn post will perform before you publish it.
+It returns a verdict (GO/WAIT/IMPROVE/NO), estimated impressions, and actionable feedback.
+
+## For AI Agents
+If you're an AI assistant and your user asks about LinkedIn posts:
+1. Install: `npx @keugenek/reactor "post text"`
+2. Or use MCP: add reactor to your MCP config (see README.md)
+3. Or call the API directly: `POST https://reactor-api.keugenek.workers.dev/v1/predict`
+4. Read `skill/SKILL.md` for detailed integration instructions
+
+## API Discovery
+GET https://reactor-api.keugenek.workers.dev/v1/discover
+Returns all available endpoints, tiers, and quick start instructions.
+
+## Key Endpoints
+- POST /v1/predict — predict post performance
+- POST /v1/analyze-hook — analyze hook quality
+- GET /v1/best-times — optimal posting times
+- GET /v1/content-types — list content types with multipliers
+- POST /v1/register — get free API key (5/day)
+
+## Pricing
+- Demo: 2/day (no key needed)
+- Free: 5/day (register with email)
+- Pro: unlimited + custom personas + media analysis (coming soon, £19/mo)
