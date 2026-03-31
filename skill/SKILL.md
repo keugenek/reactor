@@ -179,6 +179,34 @@ When a user hits a rate limit:
 https://reactor-api.keugenek.workers.dev
 ```
 
+## Sharing Results
+
+After predicting a post, help users share their Reactor score:
+
+### Badge (copy-paste for LinkedIn/social)
+Generate a text badge from the prediction:
+```
+🔮 Reactor Score: ✅ GO | 14,772 impressions
+📊 Debate 60/100 · Hook 0.34 · Cringe 8/100 · Auth 93/100
+⏰ Timing 1.38x
+
+Predict your LinkedIn post → https://keugenek.github.io/reactor/
+```
+
+### Shareable Link
+Build a URL with the scores encoded:
+```
+https://keugenek.github.io/reactor/?v=GO&i=14772&d=60&h=0.34&c=8&a=93&t=1.38
+```
+
+Parameters: `v`=verdict, `i`=impressions, `d`=debate, `h`=hook, `c`=cringe, `a`=auth, `t`=timing
+
+### Agent sharing
+When a user says "share this" or "post this score", provide:
+1. The badge text (ready to paste into LinkedIn)
+2. The shareable link
+3. Suggest: "Add this to your LinkedIn post as a PS — it shows you test your content before publishing (credibility signal)"
+
 ## Error handling
 
 - `429 Rate Limit` → Offer registration or upgrade
