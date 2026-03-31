@@ -294,9 +294,33 @@
       transition: all 0.15s;
     }
     .btn-share:hover { border-color: var(--accent); background: var(--accent); color: #fff; }
-    /* Audience select */
-    .audience-select { display: flex; flex-direction: column; gap: 4px; }
-    .audience-select select {
+    /* Options row */
+    .options-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .option-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+    .option-group label {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    .option-group input[type="number"] {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      width: 100%;
+    }
+    .option-group input[type="number"]:focus { outline: none; border-color: var(--accent); }
+    .option-group select {
       background: var(--bg);
       color: var(--text);
       border: 1px solid var(--border);
@@ -311,8 +335,8 @@
       background-position: right 10px center;
       padding-right: 30px;
     }
-    .audience-select select:focus { outline: none; border-color: var(--accent); }
-    .audience-select select option:disabled { color: var(--muted); }
+    .option-group select:focus { outline: none; border-color: var(--accent); }
+    .option-group select option:disabled { color: #555; font-style: italic; }
 
     .btn-post { border-color: #0a66c2; color: #0a66c2; font-weight: 600; }
     .btn-post:hover { background: #0a66c2; border-color: #0a66c2; color: #fff; }
@@ -337,14 +361,20 @@
 
   <div class="predict-card">
     <textarea id="postInput" placeholder="Paste your LinkedIn post draft here..." maxlength="3000"></textarea>
-    <div class="btn-row">
-      <div class="audience-select">
-        <label for="audienceSelect" style="color:var(--muted);font-size:0.8rem;">Audience</label>
-        <select id="audienceSelect">
-          <option value="tech_leaders" selected>Tech Leaders & Engineers (4.4K followers)</option>
-          <option value="custom" disabled>✨ Custom Audience (Pro)</option>
+    <div class="options-row">
+      <div class="option-group">
+        <label>Audience</label>
+        <select id="audienceSelect" onchange="handleAudienceChange()">
+          <option value="tech_leaders" selected>Tech Leaders & Engineers</option>
+          <option value="custom_pro" disabled>🔒 Custom Audience — Pro</option>
         </select>
       </div>
+      <div class="option-group">
+        <label>Your followers</label>
+        <input type="number" id="followerCount" value="1000" min="50" max="1000000" placeholder="1000">
+      </div>
+    </div>
+    <div class="btn-row">
       <button class="btn" id="predictBtn" onclick="predict()">Predict</button>
       <button class="btn-secondary" onclick="document.getElementById('postInput').value=''; hideResult();">Clear</button>
       <span class="char-count" id="charCount">0 / 3,000</span>
@@ -355,7 +385,7 @@
         <span id="verdictEmoji"></span>
         <span id="verdictText"></span>
         <span class="impressions" id="impressions"></span>
-        <span class="label">estimated impressions</span>
+        <span class="label" id="impressionsLabel">~estimated impressions</span>
       </div>
       <div class="scores" id="scores"></div>
       <div class="warnings" id="warnings" style="display:none"><h4>⚠️ Warnings</h4><ul id="warningsList"></ul></div>
@@ -476,6 +506,14 @@ async function predict() {
       return;
     }
 
+    // Scale impressions by follower count
+    const followers = parseInt($('followerCount').value) || 1000;
+    const baseFollowers = 4410; // calibrated on this audience size
+    const scale = Math.sqrt(followers / baseFollowers); // sqrt scaling (not linear)
+    data.impressions = Math.round(data.impressions * scale);
+    data._scaled = true;
+    data._followers = followers;
+
     showResult(data);
   } catch (err) {
     alert('Network error: ' + err.message);
@@ -590,6 +628,14 @@ function shareTwitter() {
   const text = `🔮 Reactor says: ${lastResult.verdict} — ${lastResult.impressions.toLocaleString()} impressions predicted\n\nPredict your LinkedIn post → https://keugenek.github.io/reactor/`;
   const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank', 'width=600,height=400');
+}
+
+function handleAudienceChange() {
+  const val = $('audienceSelect').value;
+  if (val === 'custom_pro') {
+    $('audienceSelect').value = 'tech_leaders';
+    alert('🔒 Custom Audience is a Pro feature (coming soon).\n\nJoin the waitlist for 50% off early bird pricing.');
+  }
 }
 
 function postToLinkedIn() {
