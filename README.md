@@ -22,9 +22,12 @@ npx @keugenek/reactor "Just shipped my side project. Here's what I learned."
 
 ## How it works
 
-Reactor uses calibrated heuristics (hook analysis, debate scoring, cringe detection, audience-aware timing) trained on real LinkedIn post data. **Zero LLM calls** — predictions are instant and deterministic.
+Reactor uses calibrated heuristics (hook analysis, debate scoring, cringe detection, audience-aware timing) trained on real LinkedIn post data. Predictions are **instant and deterministic** — no waiting for model inference.
 
-This package is a thin client. All scoring happens server-side on Cloudflare Workers — no API keys, no model costs, no latency.
+This package is a thin client. All scoring happens server-side on Cloudflare Workers — sub-50ms worldwide.
+
+### Post to LinkedIn
+When your post scores GO, Reactor can send you straight to LinkedIn with your text ready to paste. In AI agents, it's one command: *"Predict and post."*
 
 ## Install
 

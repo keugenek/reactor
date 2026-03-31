@@ -179,6 +179,37 @@ When a user hits a rate limit:
 https://reactor-api.keugenek.workers.dev
 ```
 
+## Post to LinkedIn
+
+When the verdict is **GO**, offer to help the user post immediately:
+
+1. Copy the post text
+2. Generate the shareable badge
+3. Tell the user: *"Your post scored GO with 14K predicted impressions. Ready to post? Open LinkedIn and paste your text: https://www.linkedin.com/feed/?shareActive=true"*
+
+### Timing advice
+If the prediction shows low timing multiplier (<0.8x), suggest waiting:
+- Call `GET /v1/best-times` to find optimal hours
+- Tell the user: *"Your post is strong but timing kills 40% of reach. Post at 9:00 AM PST Tuesday for 1.4x boost instead."*
+
+### For AI agents with browser access
+If you have browser automation (OpenClaw, Playwright, etc.):
+1. Open `https://www.linkedin.com/feed/?shareActive=true`
+2. Type/paste the post text into the compose box
+3. Confirm with user before clicking Post
+
+### Workflow: Predict → Optimize → Post
+```
+User: "Check this LinkedIn post and post it if it's good"
+Agent:
+  1. POST /v1/predict {"post": "..."}
+  2. If GO → "Score: GO, 14K impressions. Posting now."
+     → Copy text, open LinkedIn, paste
+  3. If IMPROVE → "Score: IMPROVE. Suggestions: [improvements]. Want me to fix and re-check?"
+  4. If WAIT → "Score: WAIT (timing 0.4x). Best time: 9AM Tuesday. Want me to remind you?"
+  5. If NO → "Score: NO (debate too low). Here's how to fix: [improvements]"
+```
+
 ## Sharing Results
 
 After predicting a post, help users share their Reactor score:
