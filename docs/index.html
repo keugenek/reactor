@@ -499,11 +499,11 @@ function showResult(d) {
     $('registerCard').classList.add('visible');
   }
 
-  // Show Post to LinkedIn button for GO/IMPROVE
+  // Always show Post to LinkedIn button
   const postBtn = $('postToLinkedIn');
-  postBtn.style.display = (d.verdict === 'GO' || d.verdict === 'IMPROVE') ? 'inline-block' : 'none';
-  if (d.verdict === 'GO') postBtn.textContent = '🚀 Post to LinkedIn';
-  if (d.verdict === 'IMPROVE') postBtn.textContent = '📝 Post Anyway';
+  postBtn.style.display = 'inline-block';
+  const postLabels = { GO: '🚀 Post to LinkedIn', IMPROVE: '📝 Post & Improve Later', WAIT: '⏰ Post Anyway', NO: '📝 Post Anyway' };
+  postBtn.textContent = postLabels[d.verdict] || '📝 Post to LinkedIn';
 
   // Show share panel
   buildShare(d);
