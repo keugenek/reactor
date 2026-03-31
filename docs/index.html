@@ -294,6 +294,26 @@
       transition: all 0.15s;
     }
     .btn-share:hover { border-color: var(--accent); background: var(--accent); color: #fff; }
+    /* Audience select */
+    .audience-select { display: flex; flex-direction: column; gap: 4px; }
+    .audience-select select {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238888a0' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 30px;
+    }
+    .audience-select select:focus { outline: none; border-color: var(--accent); }
+    .audience-select select option:disabled { color: var(--muted); }
+
     .btn-post { border-color: #0a66c2; color: #0a66c2; font-weight: 600; }
     .btn-post:hover { background: #0a66c2; border-color: #0a66c2; color: #fff; }
 
@@ -318,6 +338,13 @@
   <div class="predict-card">
     <textarea id="postInput" placeholder="Paste your LinkedIn post draft here..." maxlength="3000"></textarea>
     <div class="btn-row">
+      <div class="audience-select">
+        <label for="audienceSelect" style="color:var(--muted);font-size:0.8rem;">Audience</label>
+        <select id="audienceSelect">
+          <option value="tech_leaders" selected>Tech Leaders & Engineers (4.4K followers)</option>
+          <option value="custom" disabled>✨ Custom Audience (Pro)</option>
+        </select>
+      </div>
       <button class="btn" id="predictBtn" onclick="predict()">Predict</button>
       <button class="btn-secondary" onclick="document.getElementById('postInput').value=''; hideResult();">Clear</button>
       <span class="char-count" id="charCount">0 / 3,000</span>
