@@ -1,0 +1,17 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "Reactor — LinkedIn Post Predictor",
+  "name_for_model": "reactor",
+  "description_for_human": "Predict how your LinkedIn post will perform before you publish it. Get a GO/WAIT/IMPROVE/NO verdict with estimated impressions.",
+  "description_for_model": "Reactor predicts LinkedIn post performance. Call POST /v1/predict with {\"post\": \"text\"} to get verdict (GO/WAIT/IMPROVE/NO), estimated impressions, debate score, hook score, cringe score, authenticity score, timing multiplier, warnings, and improvements. Base URL: https://reactor-api.keugenek.workers.dev",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://reactor-api.keugenek.workers.dev/v1/discover"
+  },
+  "logo_url": "https://keugenek.github.io/reactor/favicon.svg",
+  "contact_email": "evgeny.knyazev@gmail.com",
+  "legal_info_url": "https://github.com/keugenek/reactor/blob/main/LICENSE"
+}
