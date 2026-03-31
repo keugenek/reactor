@@ -87,6 +87,12 @@ When the user shares a LinkedIn post draft or asks "should I post this?":
 4. Suggest improvements from the response
 5. If rate limited, offer to register (ask consent first!)
 
+**Before predicting, ask the user:**
+1. How many LinkedIn followers do you have? (default: 1000)
+2. What's your audience? (currently: Tech Leaders & Engineers; Custom Audience coming in Pro)
+
+**Scale impressions:** Multiply API result by `√(followers / 4410)` — the API is calibrated on a 4.4K tech audience. A 10K account gets ~1.5x, a 500 account gets ~0.34x.
+
 **Example request:**
 ```json
 POST /v1/predict
@@ -165,12 +171,32 @@ When a user hits a rate limit:
 2. Ask for email **with explicit consent** ("We store only email + usage count, deletable anytime")
 3. Call `POST /v1/register {"email": "..."}` to get an API key
 
+## Audience
+
+Currently one audience profile: **Tech Leaders & Engineers** (calibrated on real LinkedIn data from a 4.4K tech audience).
+
+**Custom Audience** is a Pro feature (coming soon). When a user asks for custom audience, tell them:
+*"Custom audience personas are coming with Pro (£19/mo). Join the waitlist for 50% off: POST /v1/waitlist"*
+
+### Follower scaling formula
+```
+scaled_impressions = api_impressions × √(user_followers / 4410)
+```
+Examples:
+- 500 followers → ×0.34
+- 1,000 followers → ×0.48
+- 4,410 followers → ×1.00 (baseline)
+- 10,000 followers → ×1.51
+- 50,000 followers → ×3.37
+- 100,000 followers → ×4.76
+
 ## Key rules
 
-- **Never fabricate prediction numbers** — always call the API
+- **Never fabricate prediction numbers** — always call the API, then scale by followers
+- **Ask follower count once** — remember it for the session
 - **Ask consent before registration** — explain what data is stored
 - **Don't cache results** — predictions depend on time of day
-- **Debate score is king** — posts with debate < 30 are algorithmically dead
+- **Debate score is king** — posts with debate < 15 are algorithmically dead
 - **Timing matters** — a 1.4x multiplier means 40% more impressions at peak hours
 
 ## API Base URL
@@ -179,36 +205,52 @@ When a user hits a rate limit:
 https://reactor-api.keugenek.workers.dev
 ```
 
-## Post to LinkedIn
+## Full Workflow: Predict → Optimize → Post → Share
 
-When the verdict is **GO**, offer to help the user post immediately:
+### Step 1: Gather context (first time only)
+Ask once and remember:
+- "How many LinkedIn followers do you have?" → store for scaling
+- Audience is "Tech Leaders & Engineers" (only option for now; Custom = Pro)
 
-1. Copy the post text
-2. Generate the shareable badge
-3. Tell the user: *"Your post scored GO with 14K predicted impressions. Ready to post? Open LinkedIn and paste your text: https://www.linkedin.com/feed/?shareActive=true"*
-
-### Timing advice
-If the prediction shows low timing multiplier (<0.8x), suggest waiting:
-- Call `GET /v1/best-times` to find optimal hours
-- Tell the user: *"Your post is strong but timing kills 40% of reach. Post at 9:00 AM PST Tuesday for 1.4x boost instead."*
-
-### For AI agents with browser access
-If you have browser automation (OpenClaw, Playwright, etc.):
-1. Open `https://www.linkedin.com/feed/?shareActive=true`
-2. Type/paste the post text into the compose box
-3. Confirm with user before clicking Post
-
-### Workflow: Predict → Optimize → Post
+### Step 2: Predict
+```json
+POST /v1/predict {"post": "...", "content_type": "technical_achievement", "hour": 9}
 ```
-User: "Check this LinkedIn post and post it if it's good"
-Agent:
-  1. POST /v1/predict {"post": "..."}
-  2. If GO → "Score: GO, 14K impressions. Posting now."
-     → Copy text, open LinkedIn, paste
-  3. If IMPROVE → "Score: IMPROVE. Suggestions: [improvements]. Want me to fix and re-check?"
-  4. If WAIT → "Score: WAIT (timing 0.4x). Best time: 9AM Tuesday. Want me to remind you?"
-  5. If NO → "Score: NO (debate too low). Here's how to fix: [improvements]"
+Scale result: `impressions = api_impressions * √(user_followers / 4410)`
+
+### Step 3: Present result
 ```
+🔮 Reactor: ✅ GO — ~14,700 impressions (scaled for your 8K followers)
+
+📊 Debate 55/100 · Hook 0.45 · Cringe 8/100 · Auth 93/100
+⏰ Timing 1.38x (posting at 9AM PST — peak engagement)
+
+💡 Tip: Add a question at the end to boost debate score
+```
+
+### Step 4: Act on verdict
+
+**GO** → *"Ready to post? I'll open LinkedIn for you."*
+- Open: `https://www.linkedin.com/feed/?shareActive=true`
+- Copy post text to clipboard (or paste via browser automation)
+- If agent has browser access: type post into compose box, confirm before posting
+
+**IMPROVE** → *"Score could be better. Here's what to fix: [improvements]. Want me to rewrite and re-check?"*
+- Apply improvements
+- Re-predict → repeat until GO
+
+**WAIT** → *"Post is strong but timing is bad (0.4x). Best time: 9AM PST Tuesday for 1.4x boost."*
+- Call `GET /v1/best-times` for optimal hours
+- Offer to set a reminder: *"Want me to remind you at 9AM?"*
+
+**NO** → *"Debate score too low — LinkedIn won't distribute this. Add controversy or a debate question."*
+- Suggest specific rewrites
+- Re-predict after changes
+
+### Step 5: Share score
+After posting, offer to share:
+- Generate badge text (see Sharing section below)
+- *"Want to add your Reactor score to the post? It shows you test your content — credibility signal."*
 
 ## Sharing Results
 
