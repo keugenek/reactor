@@ -506,12 +506,19 @@ async function predict() {
       return;
     }
 
-    // Scale impressions by follower count
+    // Scale impressions proportionally to followers with tolerance band
     const followers = parseInt($('followerCount').value) || 1000;
-    const baseFollowers = 4410; // calibrated on this audience size
-    const scale = Math.sqrt(followers / baseFollowers); // sqrt scaling (not linear)
-    data.impressions = Math.round(data.impressions * scale);
-    data._scaled = true;
+    const baseFollowers = 4410;
+    const ratio = followers / baseFollowers;
+    // Linear scaling with dampening: 70% proportional + 30% baseline (accounts for organic reach beyond followers)
+    const scale = 0.3 + 0.7 * ratio;
+    const baseImpressions = Math.round(data.impressions * scale);
+    // Add ±15% tolerance band
+    const low = Math.round(baseImpressions * 0.85);
+    const high = Math.round(baseImpressions * 1.15);
+    data.impressions = baseImpressions;
+    data._low = low;
+    data._high = high;
     data._followers = followers;
 
     showResult(data);
@@ -531,7 +538,11 @@ function showResult(d) {
   bar.className = `verdict-bar ${cls}`;
   $('verdictEmoji').textContent = emoji;
   $('verdictText').textContent = d.verdict;
-  $('impressions').textContent = d.impressions.toLocaleString();
+  if (d._low && d._high) {
+    $('impressions').textContent = `${d._low.toLocaleString()} – ${d._high.toLocaleString()}`;
+  } else {
+    $('impressions').textContent = d.impressions.toLocaleString();
+  }
 
   $('scores').innerHTML = [
     ['Debate', d.debate_score, '/100'],
@@ -584,7 +595,8 @@ function buildShare(d) {
   const e = emojis[d.verdict] || '❓';
 
   // Build badge text
-  const badge = `🔮 Reactor Score: ${e} ${d.verdict} | ${d.impressions.toLocaleString()} impressions
+  const impressionsText = d._low ? `${d._low.toLocaleString()} – ${d._high.toLocaleString()}` : d.impressions.toLocaleString();
+  const badge = `🔮 Reactor Score: ${e} ${d.verdict} | ~${impressionsText} impressions
 📊 Debate ${d.debate_score}/100 · Hook ${d.hook_score} · Cringe ${d.cringe_score}/100 · Auth ${d.authenticity_score}/100
 ⏰ Timing ${d.timing_multiplier}x
 

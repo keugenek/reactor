@@ -91,7 +91,7 @@ When the user shares a LinkedIn post draft or asks "should I post this?":
 1. How many LinkedIn followers do you have? (default: 1000)
 2. What's your audience? (currently: Tech Leaders & Engineers; Custom Audience coming in Pro)
 
-**Scale impressions:** Multiply API result by `√(followers / 4410)` — the API is calibrated on a 4.4K tech audience. A 10K account gets ~1.5x, a 500 account gets ~0.34x.
+**Scale impressions:** API is calibrated on a 4.4K tech audience. Scale proportionally: `scale = 0.3 + 0.7 × (followers / 4410)`. Add ±15% tolerance band. Present as range.
 
 **Example request:**
 ```json
@@ -180,15 +180,21 @@ Currently one audience profile: **Tech Leaders & Engineers** (calibrated on real
 
 ### Follower scaling formula
 ```
-scaled_impressions = api_impressions × √(user_followers / 4410)
+ratio = user_followers / 4410
+scale = 0.3 + 0.7 × ratio        // 70% proportional, 30% organic baseline
+scaled = api_impressions × scale
+low = scaled × 0.85              // ±15% tolerance
+high = scaled × 1.15
 ```
-Examples:
-- 500 followers → ×0.34
-- 1,000 followers → ×0.48
-- 4,410 followers → ×1.00 (baseline)
-- 10,000 followers → ×1.51
-- 50,000 followers → ×3.37
-- 100,000 followers → ×4.76
+
+Present as range: **"~850 – 1,150 impressions"**
+
+Examples (for api_impressions = 1000):
+- 500 followers → ~330 – 450
+- 1,000 followers → ~440 – 600
+- 4,410 followers → ~850 – 1,150 (baseline)
+- 10,000 followers → ~1,420 – 1,930
+- 50,000 followers → ~7,000 – 9,500
 
 ## Key rules
 
@@ -220,7 +226,7 @@ Scale result: `impressions = api_impressions * √(user_followers / 4410)`
 
 ### Step 3: Present result
 ```
-🔮 Reactor: ✅ GO — ~14,700 impressions (scaled for your 8K followers)
+🔮 Reactor: ✅ GO — ~12,500 – 16,900 impressions (for 8K followers)
 
 📊 Debate 55/100 · Hook 0.45 · Cringe 8/100 · Auth 93/100
 ⏰ Timing 1.38x (posting at 9AM PST — peak engagement)
