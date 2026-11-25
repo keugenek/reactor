@@ -1,9 +1,12 @@
 {
-  "reactor": {
-    "command": "npx",
-    "args": ["@keugenek/reactor", "--mcp"],
-    "env": {
-      "REACTOR_API_KEY": "rk_free_your_key_here"
+  "mcpServers": {
+    "reactor": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "github:keugenek/reactor",
+        "--mcp"
+      ]
     }
   }
 }

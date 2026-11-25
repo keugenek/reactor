@@ -1,0 +1,13 @@
+{
+  "name": "reactor",
+  "owner": {
+    "name": "keugenek"
+  },
+  "plugins": [
+    {
+      "name": "reactor",
+      "source": "./",
+      "description": "Predict LinkedIn post performance before publishing."
+    }
+  ]
+}
