@@ -1,0 +1,41 @@
+{
+  "name": "@keugenek/reactor",
+  "version": "1.1.0",
+  "description": "LinkedIn post performance predictor — CLI and MCP server. GO/WAIT/IMPROVE/NO verdict, impressions range, debate, hook and cringe scores.",
+  "type": "module",
+  "bin": {
+    "reactor": "bin/reactor.mjs"
+  },
+  "files": [
+    "bin",
+    "skills",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/keugenek/reactor.git"
+  },
+  "homepage": "https://keugenek.github.io/reactor/",
+  "bugs": "https://github.com/keugenek/reactor/issues",
+  "keywords": [
+    "linkedin",
+    "mcp",
+    "mcp-server",
+    "agent-skill",
+    "cli",
+    "content",
+    "engagement"
+  ],
+  "author": "keugenek",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}

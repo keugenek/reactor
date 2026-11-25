@@ -1,6 +1,5 @@
 # 🔮 Reactor — LinkedIn Post Analyzer & Engagement Predictor
 
-[![npm](https://img.shields.io/npm/v/@keugenek/reactor)](https://npmjs.com/package/@keugenek/reactor)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/keugenek/reactor?style=social)](https://github.com/keugenek/reactor)
 
@@ -9,17 +8,20 @@
 **Try it free:** [keugenek.github.io/reactor](https://keugenek.github.io/reactor/)
 
 ```bash
-npx @keugenek/reactor "Just shipped my side project. Here's what I learned."
+npx -y github:keugenek/reactor "I just ran a 685B parameter model on consumer hardware. Here is what broke." --followers 1000
 ```
 
 ```
-  ✅ GO  14,772 impressions
+  🛠️ IMPROVE  91 – 213 impressions (for 1,000 followers)
 
-  Debate    60/100
-  Hook      0.34
-  Cringe    8/100
-  Auth      93/100
-  Timing    1.38x
+  Debate    21/100
+  Hook      0.37
+  Cringe    15/100
+  Auth      85/100
+  Timing    0.64x
+
+  ⚠️ LOW DEBATE: Score <30 = reduced reach. Comments drive the algorithm.
+  💡 Boost debate score from 21 to >30
 ```
 
 ## Why Reactor?
@@ -47,11 +49,11 @@ npx @keugenek/reactor "Just shipped my side project. Here's what I learned."
 ### CLI
 
 ```bash
-# Run without installing
-npx @keugenek/reactor "Your LinkedIn post text"
+# Run without installing (Node 18+, zero dependencies)
+npx -y github:keugenek/reactor "Your LinkedIn post text" --followers 1000
 
 # Or install globally
-npm install -g @keugenek/reactor
+npm install -g github:keugenek/reactor
 reactor "Your post"
 ```
 
@@ -64,10 +66,7 @@ Add to your MCP config:
   "mcpServers": {
     "reactor": {
       "command": "npx",
-      "args": ["@keugenek/reactor", "--mcp"],
-      "env": {
-        "REACTOR_API_KEY": "rk_free_your_key_here"
-      }
+      "args": ["-y", "github:keugenek/reactor", "--mcp"]
     }
   }
 }
@@ -80,23 +79,42 @@ Your AI assistant gets these tools:
 | `predict_post` | Full prediction: verdict + impressions + improvements |
 | `analyze_hook` | Hook analysis (curiosity, emotion, controversy) |
 | `best_posting_times` | Optimal posting windows for your audience |
+| `list_content_types` | Content types with multipliers |
 | `reactor_register` | Get free API key |
 | `reactor_join_waitlist` | Join Pro waitlist |
 
-### OpenClaw / AI Agent Skill
+No key is needed for the demo tier (2 calls/day per IP). For 5/day, run `reactor --register you@example.com` once — the key is saved locally — or set `REACTOR_API_KEY` in the `env` block.
 
-Copy `skill/SKILL.md` to your agent's skills directory. Auto-triggers on LinkedIn post discussions.
+### Agent Skill (Claude Code, Cursor, Codex, OpenClaw, ...)
+
+```bash
+npx skills add keugenek/reactor
+```
+
+Claude Code plugin:
+
+```
+/plugin marketplace add keugenek/reactor
+/plugin install reactor@reactor
+```
+
+Or copy [`skills/reactor/SKILL.md`](skills/reactor/SKILL.md) into your agent's skills directory (for claude.ai, zip the `skills/reactor` folder and upload it as a skill).
 
 ## CLI Commands
 
 ```bash
 reactor "Your post"                        # predict
 reactor "Post" --type opinion_hot_take     # with content type
-reactor "Post" --hour 9                    # with posting time
+reactor "Post" --hour 9                    # with posting hour (US Pacific)
+reactor "Post" --followers 8000            # scale impressions to your audience
+reactor --file draft.txt                   # read the post from a file
+reactor --hook "Post"                      # hook analysis
+reactor --best-times                       # best posting hours
 reactor --types                            # list 18 content types
-reactor --discover                         # API features + tiers
 reactor --register me@email.com            # get free API key (5/day)
 reactor --waitlist me@email.com            # join Pro waitlist (50% off)
+reactor --delete                           # delete your account
+reactor --mcp                              # run as MCP server
 ```
 
 ## Content Types
@@ -124,7 +142,11 @@ Base URL: `https://reactor-api.keugenek.workers.dev`
 | `/v1/best-times` | GET | Optimal posting times |
 | `/v1/content-types` | GET | List content types + multipliers |
 | `/v1/register` | POST | Get free API key |
-| `/v1/discover` | GET | Progressive discovery (all endpoints) |
+| `/v1/waitlist` | POST | Join Pro waitlist |
+| `/v1/account` | DELETE | Delete account |
+| `/v1/health` | GET | Health check |
+
+OpenAPI spec: [`docs/openapi.json`](docs/openapi.json). `/v1/predict` and `/v1/analyze-hook` share the daily quota.
 
 ## Pricing
 
@@ -149,8 +171,8 @@ LinkedIn post analyzer, LinkedIn engagement predictor, LinkedIn post checker, Li
 
 ```
 ┌─────────────┐     ┌──────────────────────┐
-│  CLI / MCP  │────▶│  Cloudflare Worker   │
-│  (this pkg) │◀────│  (scoring engine)    │
+│ CLI/MCP/Web │────▶│  Cloudflare Worker   │
+│ (this repo) │◀────│  (scoring engine)    │
 └─────────────┘     │  KV: rate limits     │
                     │  KV: registrations   │
                     └──────────────────────┘
@@ -158,7 +180,7 @@ LinkedIn post analyzer, LinkedIn engagement predictor, LinkedIn post checker, Li
 
 ## Contributing
 
-Issues and PRs welcome. The scoring engine is proprietary (Cloudflare Worker).
+Issues and PRs welcome. `npm test` runs the CLI and MCP server against a local mock API — no dependencies to install. The scoring engine is proprietary (Cloudflare Worker).
 
 ---
 

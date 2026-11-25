@@ -1,0 +1,17 @@
+{
+  "name": "reactor",
+  "description": "Predict LinkedIn post performance before publishing: GO/WAIT/IMPROVE/NO verdict, impressions range, debate, hook and cringe scores.",
+  "version": "1.1.0",
+  "author": {
+    "name": "keugenek",
+    "url": "https://github.com/keugenek"
+  },
+  "homepage": "https://keugenek.github.io/reactor/",
+  "repository": "https://github.com/keugenek/reactor",
+  "license": "MIT",
+  "keywords": [
+    "linkedin",
+    "content",
+    "engagement"
+  ]
+}

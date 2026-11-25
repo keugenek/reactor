@@ -1,0 +1,65 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Reactor API",
+    "version": "1.0.0",
+    "description": "Predict LinkedIn post performance before publishing. Demo: 2 calls/day per IP without a key. Free: 5 calls/day with a key from /v1/register. /v1/predict and /v1/analyze-hook share the quota.",
+    "license": { "name": "MIT" }
+  },
+  "servers": [{ "url": "https://reactor-api.keugenek.workers.dev" }],
+  "components": {
+    "securitySchemes": { "apiKey": { "type": "http", "scheme": "bearer", "description": "Optional. Key from /v1/register." } },
+    "schemas": {
+      "Error": { "type": "object", "properties": { "error": { "type": "string" }, "message": { "type": "string" }, "needsRegistration": { "type": "boolean" }, "needsUpgrade": { "type": "boolean" }, "resetAt": { "type": "integer", "description": "Epoch milliseconds" } } },
+      "RateLimit": { "type": "object", "properties": { "remaining": { "type": "integer" }, "limit": { "type": "integer" }, "resetAt": { "type": "integer" } } },
+      "PostInput": { "type": "object", "required": ["post"], "properties": { "post": { "type": "string" } } },
+      "EmailInput": { "type": "object", "required": ["email"], "properties": { "email": { "type": "string", "format": "email" } } },
+      "PredictInput": {
+        "type": "object", "required": ["post"],
+        "properties": {
+          "post": { "type": "string", "description": "Full post text" },
+          "followers": { "type": "integer", "minimum": 1, "description": "Author's follower count. Impressions are scaled server-side. Default 4410." },
+          "content_type": { "type": "string", "description": "A name from /v1/content-types" },
+          "hour": { "type": "integer", "minimum": 0, "maximum": 23, "description": "Posting hour, US Pacific time" },
+          "weekday": { "type": "integer", "minimum": 0, "maximum": 6, "description": "0 = Sunday" }
+        }
+      },
+      "Prediction": {
+        "type": "object",
+        "properties": {
+          "verdict": { "type": "string", "enum": ["GO", "WAIT", "IMPROVE", "NO"] },
+          "impressions": { "type": "integer" },
+          "impressions_low": { "type": "integer" },
+          "impressions_high": { "type": "integer" },
+          "confidence": { "type": "string" },
+          "followers": { "type": "integer" },
+          "debate_score": { "type": "number" },
+          "hook_score": { "type": "number" },
+          "cringe_score": { "type": "number" },
+          "authenticity_score": { "type": "number" },
+          "timing_multiplier": { "type": "number" },
+          "warnings": { "type": "array", "items": { "type": "string" } },
+          "improvements": { "type": "array", "items": { "type": "string" } },
+          "tier": { "type": "string" },
+          "rateLimit": { "$ref": "#/components/schemas/RateLimit" }
+        }
+      }
+    },
+    "responses": {
+      "RateLimited": { "description": "Daily quota used", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "BadRequest": { "description": "Missing field", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "Unauthorized": { "description": "Invalid API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+    }
+  },
+  "security": [{}, { "apiKey": [] }],
+  "paths": {
+    "/v1/predict": { "post": { "operationId": "predictPost", "summary": "Predict post performance", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PredictInput" } } } }, "responses": { "200": { "description": "Prediction", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Prediction" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "429": { "$ref": "#/components/responses/RateLimited" } } } },
+    "/v1/analyze-hook": { "post": { "operationId": "analyzeHook", "summary": "Analyze the opening lines", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostInput" } } } }, "responses": { "200": { "description": "Hook analysis", "content": { "application/json": { "schema": { "type": "object", "properties": { "hookText": { "type": "string" }, "curiosityGap": { "type": "number" }, "emotionalTrigger": { "type": "number" }, "controversyPotential": { "type": "number" }, "relatability": { "type": "number" }, "specificity": { "type": "number" }, "tier": { "type": "string" }, "rateLimit": { "$ref": "#/components/schemas/RateLimit" } } } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "429": { "$ref": "#/components/responses/RateLimited" } } } },
+    "/v1/best-times": { "get": { "operationId": "bestTimes", "summary": "Ranked posting hours (US Pacific)", "responses": { "200": { "description": "Hours", "content": { "application/json": { "schema": { "type": "object", "properties": { "bestTimes": { "type": "array", "items": { "type": "object", "properties": { "pstHour": { "type": "integer" }, "score": { "type": "number" }, "awakePct": { "type": "number" }, "peakPct": { "type": "number" } } } } } } } } } } } },
+    "/v1/content-types": { "get": { "operationId": "contentTypes", "summary": "Content types with multipliers", "responses": { "200": { "description": "Types", "content": { "application/json": { "schema": { "type": "object", "properties": { "contentTypes": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "multiplier": { "type": "number" } } } } } } } } } } } },
+    "/v1/register": { "post": { "operationId": "register", "summary": "Get a free API key (stores email + usage count)", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EmailInput" } } } }, "responses": { "200": { "description": "Key", "content": { "application/json": { "schema": { "type": "object", "properties": { "api_key": { "type": "string" }, "limit": { "type": "integer" } } } } } }, "400": { "$ref": "#/components/responses/BadRequest" } } } },
+    "/v1/waitlist": { "post": { "operationId": "joinWaitlist", "summary": "Join the Pro waitlist", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EmailInput" } } } }, "responses": { "200": { "description": "Joined" }, "400": { "$ref": "#/components/responses/BadRequest" } } } },
+    "/v1/account": { "delete": { "operationId": "deleteAccount", "summary": "Delete the account for the supplied key", "security": [{ "apiKey": [] }], "responses": { "200": { "description": "Deleted" }, "401": { "$ref": "#/components/responses/Unauthorized" } } } },
+    "/v1/health": { "get": { "operationId": "health", "summary": "Health check", "security": [{}], "responses": { "200": { "description": "OK" } } } }
+  }
+}
