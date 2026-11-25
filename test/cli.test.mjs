@@ -74,6 +74,14 @@ test('register saves the key and later calls send it', async () => {
   assert.equal(seen.at(-1).auth, 'Bearer rk_free_test');
 });
 
+test('followers defaults to 1000 in CLI and MCP instead of the API default', async () => {
+  await run(['No followers given']);
+  assert.equal(seen.at(-1).body.followers, 1000);
+  const call = { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'predict_post', arguments: { post: 'Hi' } } };
+  await run(['--mcp'], JSON.stringify(call) + '\n');
+  assert.equal(seen.at(-1).body.followers, 1000);
+});
+
 test('MCP: initialize, tools/list, tools/call', async () => {
   const msgs = [
     { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 't', version: '0' } } },

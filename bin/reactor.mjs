@@ -11,6 +11,7 @@ const VERSION = '1.1.0';
 const API = (process.env.REACTOR_API_URL || 'https://reactor-api.keugenek.workers.dev').replace(/\/+$/, '');
 const KEY_DIR = join(process.env.XDG_CONFIG_HOME || join(homedir(), '.config'), 'reactor');
 const KEY_FILE = join(KEY_DIR, 'api_key');
+const DEFAULT_FOLLOWERS = 1000;
 
 // ---------- API client ----------
 
@@ -66,7 +67,9 @@ function predictBody(o) {
   if (o.content_type) body.content_type = o.content_type;
   if (Number.isInteger(o.hour)) body.hour = o.hour;
   if (Number.isInteger(o.weekday)) body.weekday = o.weekday;
-  if (Number.isFinite(o.followers) && o.followers > 0) body.followers = Math.round(o.followers);
+  // Always send followers: when omitted the API assumes its 4,410 calibration audience,
+  // not the 1,000 default this client advertises.
+  body.followers = Number.isFinite(o.followers) && o.followers > 0 ? Math.round(o.followers) : DEFAULT_FOLLOWERS;
   return body;
 }
 
@@ -253,6 +256,7 @@ const HELP = `reactor ${VERSION} — LinkedIn post performance predictor
 
 Usage:
   reactor "Your post text" [--followers N] [--type TYPE] [--hour 0-23] [--weekday 0-6] [--json]
+                                      --followers defaults to 1000
   reactor --file draft.txt            predict a post read from a file ("-" = stdin)
   reactor --hook "Your post text"     hook analysis
   reactor --types                     list content types
